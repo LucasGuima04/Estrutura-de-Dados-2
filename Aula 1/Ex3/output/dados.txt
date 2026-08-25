@@ -1,0 +1,9 @@
+Vamos colocar
+algumas linhas
+para avaliar
+se o programa
+esta funcionando 
+de forma correta
+ele deve ler x linhas
+e colocar y linhas
+comandadas pelo terminar
