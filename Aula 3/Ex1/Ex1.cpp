@@ -317,7 +317,6 @@ int main(void)
                 update_cliente(cpf,nome,sobrenome,telefone,cidade);
                 break;
             case 4:
-                printf("\nCPF a ser removido: ");
                 le_string(cpf, 20);
 
                 offset = busca_binaria(cpf);
