@@ -678,23 +678,7 @@ void lerMusica(Musica *m)
     m->genero[strcspn(m->genero, "\n")] = '\0';
 }
  
- 
-/* =========================================================
-                  CARREGAR INSERE.BIN
-   ========================================================= */
- 
-/*
-    Para facilitar os testes, este programa considera
-    insere.bin como um arquivo contendo registros no mesmo
-    formato textual:
- 
-        codigo|nome|artista|genero\0
- 
-    um registro apos o outro.
- 
-    Caso o professor forneca insere.bin em outro formato,
-    somente esta funcao precisa ser adaptada.
-*/
+
 int lerRegistroInsere(FILE *fp, Musica *m)
 {
     char linha[256];
@@ -711,10 +695,8 @@ int lerRegistroInsere(FILE *fp, Musica *m)
     return 1;
 }
  
- 
-/*
-    Carrega todas as musicas do insere.bin e insere.
-*/
+//Carrega todas as musicas do insere.bin e insere.
+
 void carregarInsere()
 {
     FILE *fp;
@@ -742,15 +724,6 @@ void carregarInsere()
     printf("Carregamento finalizado.\n");
 }
  
- 
-/* =========================================================
-                  CARREGAR REMOVE.BIN
-   ========================================================= */
- 
-/*
-    Considera remove.bin como um arquivo texto contendo
-    um codigo por linha.
-*/
 void carregarRemove()
 {
     FILE *fp;
@@ -813,21 +786,13 @@ void menu()
 int main()
 {
     int opcao;
- 
-    /*
-        IMPORTANTE:
- 
-        O arquivo somente e criado caso ainda nao exista.
-        Isso atende a observacao do exercicio.
-    */
+
     inicializarArquivo();
  
     do {
  
         menu();
- 
         scanf("%d", &opcao);
- 
         switch (opcao) {
  
             case 1:
