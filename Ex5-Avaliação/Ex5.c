@@ -565,35 +565,7 @@ void dumpArquivo(){
 }
  
  
-/* =========================================================
-                  COMPACTACAO
-   ========================================================= */
- 
-/*
-    Compacta o arquivo.
- 
-    A ideia e:
- 
-        arquivo antigo
-              |
-              v
-        le registro por registro
-              |
-              v
-        copia somente os ocupados
-              |
-              v
-        novo arquivo temporario
-              |
-              v
-        substitui o arquivo antigo
- 
-    Depois da compactacao:
- 
-        HEADER -> -1
- 
-    pois nao existem mais espacos livres.
-*/
+
 void compactarArquivo()
 {
     FILE *origem;
@@ -639,9 +611,8 @@ void compactarArquivo()
         if (tamanho <= 0)
             break;
  
-        /*
-            Se nao estiver removido, copia.
-        */
+        //Se nao estiver removido, copia.
+        
         if (!registroRemovido(origem, offset)) {
  
             char *buffer;
@@ -669,9 +640,7 @@ void compactarArquivo()
     fclose(origem);
     fclose(destino);
  
-    /*
-        Substitui o arquivo antigo.
-    */
+    //Substitui o arquivo antigo.
     remove(ARQUIVO_DADOS);
  
     if (rename("catalogo_temp.bin", ARQUIVO_DADOS) != 0) {
