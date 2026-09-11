@@ -39,23 +39,14 @@ typedef struct {
 int tamanhoRegistro(Musica *m){
     int tamanhoDados;
 
-    tamanhoDados =
-        strlen(m->codigo) +
-        1 +
-        strlen(m->nome) +
-        1 +
-        strlen(m->artista) +
-        1 +
-        strlen(m->genero) +
-        1; // \0
+    tamanhoDados = strlen(m->codigo) + 1 + strlen(m->nome) + 1 + strlen(m->artista) + 1 + strlen(m->genero) + 1; 
 
     return sizeof(int) + tamanhoDados;
 }
 
 //Monta a parte textual do registro.
 
-char *montarRegistro(Musica *m, int *tamanhoDados)
-{
+char *montarRegistro(Musica *m, int *tamanhoDados){
     char *buffer;
     *tamanhoDados = strlen(m->codigo) + 1 + strlen(m->nome) + 1 + strlen(m->artista) + 1 + strlen(m->genero) + 1;
     
@@ -65,30 +56,13 @@ char *montarRegistro(Musica *m, int *tamanhoDados)
         exit(1);
     }
 
-    snprintf(
-        buffer,
-        *tamanhoDados,
-        "%s|%s|%s|%s",
-        m->codigo,
-        m->nome,
-        m->artista,
-        m->genero
-    );
+    snprintf(buffer,*tamanhoDados,"%s|%s|%s|%s",m->codigo,m->nome,m->artista,m->genero);
 
     return buffer;
 }
 
 
-/*
-    Inicializa o arquivo caso ele ainda nao exista.
-
-    Header:
-        int firstFree
-
-    -1 significa que nao existe espaco livre.
-*/
-void inicializarArquivo()
-{
+void inicializarArquivo(){
     FILE *fp;
     int firstFree = OFFSET_NULO;
 
@@ -114,11 +88,7 @@ void inicializarArquivo()
 }
 
 
-/*
-    Le o offset do primeiro espaco livre.
-*/
-int lerHeader(FILE *fp)
-{
+int lerHeader(FILE *fp){
     int primeiro;
 
     fseek(fp, 0, SEEK_SET);
@@ -130,25 +100,17 @@ int lerHeader(FILE *fp)
     return primeiro;
 }
 
+//Atualiza o offset do primeiro espaco livre.
 
-/*
-    Atualiza o offset do primeiro espaco livre.
-*/
-void atualizarHeader(FILE *fp, int offset)
-{
+void atualizarHeader(FILE *fp, int offset){
     fseek(fp, 0, SEEK_SET);
-
     fwrite(&offset, sizeof(int), 1, fp);
-
     fflush(fp);
 }
 
+//Retorna o tamanho do arquivo.
 
-/*
-    Retorna o tamanho do arquivo.
-*/
-int tamanhoArquivo(FILE *fp)
-{
+int tamanhoArquivo(FILE *fp){
     long atual;
     long fim;
 
@@ -162,24 +124,9 @@ int tamanhoArquivo(FILE *fp)
     return (int) fim;
 }
 
+//Ler espaços livres
 
-/* =========================================================
-                     LISTA DE ESPAÇOS LIVRES
-   ========================================================= */
-
-/*
-    Le as informacoes de um espaco livre.
-
-    Formato do espaco removido:
-
-    [4 bytes tamanho]
-    [1 byte '@']
-    [4 bytes prox]
-
-    O tamanho indica o tamanho TOTAL do espaco.
-*/
-int lerEspacoLivre(FILE *fp, int offset, EspacoLivre *espaco)
-{
+int lerEspacoLivre(FILE *fp, int offset, EspacoLivre *espaco){
     char marcador;
     int tamanho;
     int prox;
@@ -208,23 +155,9 @@ int lerEspacoLivre(FILE *fp, int offset, EspacoLivre *espaco)
     return 1;
 }
 
+//Encontrar melhor espaço
 
-/*
-    Procura o melhor espaco para o registro.
-
-    BEST-FIT:
-        entre todos os espacos que comportam o registro,
-        escolhe o menor deles.
-
-    Tambem retorna o espaco anterior na lista.
-*/
-int encontrarBestFit(
-    FILE *fp,
-    int tamanhoNecessario,
-    EspacoLivre *melhor,
-    int *offsetAnterior
-)
-{
+int encontrarBestFit(FILE *fp, int tamanhoNecessario, EspacoLivre *melhor, int *offsetAnterior){
     int atual;
     int anterior = OFFSET_NULO;
 
@@ -242,17 +175,13 @@ int encontrarBestFit(
         }
 
         if (espaco.tamanho >= tamanhoNecessario) {
-
-            if (!encontrou ||
-                espaco.tamanho < melhor->tamanho) {
+            if (!encontrou || espaco.tamanho < melhor->tamanho) {
 
                 *melhor = espaco;
                 *offsetAnterior = anterior;
-
                 encontrou = 1;
             }
         }
-
         anterior = atual;
         atual = espaco.prox;
     }
@@ -261,17 +190,6 @@ int encontrarBestFit(
 }
 
 
-/*
-    Remove um espaco da lista encadeada.
-
-    Existem dois casos:
-
-    1. O espaco e o primeiro:
-           HEADER -> segundo
-
-    2. O espaco esta no meio/fim:
-           anterior -> proximo
-*/
 void removerDaListaLivre(
     FILE *fp,
     EspacoLivre *espaco,
@@ -279,40 +197,18 @@ void removerDaListaLivre(
 )
 {
     if (offsetAnterior == OFFSET_NULO) {
-
         /* Era o primeiro elemento */
         atualizarHeader(fp, espaco->prox);
-
     } else {
-
         /* Atualiza o ponteiro do anterior */
         fseek(fp, offsetAnterior + sizeof(int) + 1, SEEK_SET);
-
-        fwrite(
-            &espaco->prox,
-            sizeof(int),
-            1,
-            fp
-        );
-
+        fwrite(&espaco->prox,sizeof(int),1,fp);
         fflush(fp);
     }
 }
 
 
-/*
-    Adiciona um novo espaco no FINAL da lista.
-
-    Isso segue diretamente a especificacao:
-    "Um novo espaço disponível deve ser acrescentado sempre
-     no final da lista". 
-*/
-void adicionarListaLivre(
-    FILE *fp,
-    int offset,
-    int tamanho
-)
-{
+void adicionarListaLivre(FILE *fp,int offset,int tamanho){
     int primeiro;
     int atual;
 
@@ -320,32 +216,19 @@ void adicionarListaLivre(
 
     primeiro = lerHeader(fp);
 
-    /*
-        Lista vazia:
-            HEADER -> novo -> -1
-    */
     if (primeiro == OFFSET_NULO) {
 
         fseek(fp, offset, SEEK_SET);
-
         fwrite(&tamanho, sizeof(int), 1, fp);
-
         fputc('@', fp);
-
         proximo = OFFSET_NULO;
-
         fwrite(&proximo, sizeof(int), 1, fp);
-
         fflush(fp);
-
         atualizarHeader(fp, offset);
-
         return;
     }
 
-    /*
-        Percorre ate o ultimo elemento.
-    */
+    //Percorre ate o ultimo elemento.
     atual = primeiro;
 
     while (1) {
@@ -363,37 +246,18 @@ void adicionarListaLivre(
         atual = espaco.prox;
     }
 
-    /*
-        Atualiza o ultimo elemento para apontar
-        para o novo espaco.
-    */
+    //Atualiza o ultimo elemento para apontar para o novo espaco.
     fseek(fp, atual + sizeof(int) + 1, SEEK_SET);
 
-    fwrite(
-        &offset,
-        sizeof(int),
-        1,
-        fp
-    );
+    fwrite(&offset,sizeof(int),1,fp);
 
-    /*
-        Grava o novo espaco.
-    */
+    //Grava o novo espaco.
     fseek(fp, offset, SEEK_SET);
 
     fwrite(&tamanho, sizeof(int), 1, fp);
-
     fputc('@', fp);
-
     proximo = OFFSET_NULO;
-
-    fwrite(
-        &proximo,
-        sizeof(int),
-        1,
-        fp
-    );
-
+    fwrite(&proximo,sizeof(int),1,fp);
     fflush(fp);
 }
 
@@ -411,12 +275,7 @@ void adicionarListaLivre(
 
     Isso e permitido pelo enunciado.
 */
-void escreverMusicaNoOffset(
-    FILE *fp,
-    Musica *m,
-    int offset,
-    int tamanhoEspaco
-)
+void escreverMusicaNoOffset(FILE *fp,Musica *m,int offset,int tamanhoEspaco)
 {
     char *registro;
     int tamanhoDados;
@@ -429,46 +288,25 @@ void escreverMusicaNoOffset(
 
     fseek(fp, offset, SEEK_SET);
 
-    /*
-        Primeiro o tamanho do registro.
-    */
-    fwrite(
-        &tamanhoRegistroAtual,
-        sizeof(int),
-        1,
-        fp
-    );
+    //Primeiro o tamanho do registro.
+    fwrite(&tamanhoRegistroAtual,sizeof(int),1,fp);
 
-    /*
-        Depois os dados.
-    */
-    fwrite(
-        registro,
-        tamanhoDados,
-        1,
-        fp
-    );
+    //Depois os dados.
+    fwrite(registro,tamanhoDados,1,fp);
 
-    /*
-        Preenche o restante do espaco com zeros.
-    */
+    //Preenche o restante do espaco com zeros.
     if (tamanhoEspaco > tamanhoRegistroAtual) {
 
-        int restante =
-            tamanhoEspaco - tamanhoRegistroAtual;
-
+        int restante =tamanhoEspaco - tamanhoRegistroAtual;
         char zero = 0;
 
         while (restante > 0) {
-
             fwrite(&zero, 1, 1, fp);
-
             restante--;
         }
     }
 
     fflush(fp);
-
     free(registro);
 }
 
@@ -499,85 +337,37 @@ void inserirMusica(Musica *m)
 
     tamanhoNecessario = tamanhoRegistro(m);
 
-    /*
-        Procura o melhor espaco.
-    */
-    if (encontrarBestFit(
-            fp,
-            tamanhoNecessario,
-            &melhor,
-            &anterior)) {
+    //Procura o melhor espaco.
+    if (encontrarBestFit(fp,tamanhoNecessario,&melhor,&anterior)) {
 
-        printf(
-            "Reutilizando espaco no offset %d "
-            "(tamanho %d).\n",
-            melhor.offset,
-            melhor.tamanho
-        );
+        printf("Reutilizando espaco no offset %d (tamanho %d).\n",melhor.offset,melhor.tamanho);
 
-        /*
-            Remove o espaco da lista livre.
-        */
-        removerDaListaLivre(
-            fp,
-            &melhor,
-            anterior
-        );
+        //Remove o espaco da lista livre.
+        removerDaListaLivre(fp,&melhor,anterior);
 
-        /*
-            Grava o novo registro.
-        */
-        escreverMusicaNoOffset(
-            fp,
-            m,
-            melhor.offset,
-            melhor.tamanho
-        );
+        //Grava o novo registro.
+        escreverMusicaNoOffset(fp,m,melhor.offset,melhor.tamanho);
 
     } else {
 
-        /*
-            Nenhum espaco serviu.
-            Vai para o final do arquivo.
-        */
+        //Nenhum espaco serviu, vai para o final do arquivo.
         int offsetFinal;
-
         offsetFinal = tamanhoArquivo(fp);
-
-        printf(
-            "Nenhum espaco adequado. "
-            "Inserindo no final, offset %d.\n",
-            offsetFinal
-        );
-
-        escreverMusicaNoOffset(
-            fp,
-            m,
-            offsetFinal,
-            tamanhoNecessario
-        );
+        printf("Nenhum espaco adequado. Inserindo no final, offset %d.\n",offsetFinal);
+        escreverMusicaNoOffset(fp,m,offsetFinal,tamanhoNecessario);
     }
 
     fclose(fp);
 }
 
 
-/* =========================================================
-                         BUSCA
-   ========================================================= */
+//BUSCA
 
-/*
-    Verifica se um registro no offset e removido.
-*/
 int registroRemovido(FILE *fp, int offset)
 {
     char marcador;
 
-    fseek(
-        fp,
-        offset + sizeof(int),
-        SEEK_SET
-    );
+    fseek(fp,offset + sizeof(int),SEEK_SET);
 
     if (fread(&marcador, sizeof(char), 1, fp) != 1)
         return 0;
@@ -585,16 +375,7 @@ int registroRemovido(FILE *fp, int offset)
     return marcador == '@';
 }
 
-
-/*
-    Busca uma musica pelo codigo.
-
-    Retorna:
-        1 -> encontrada
-        0 -> nao encontrada
-
-    offsetEncontrado recebe o offset.
-*/
+//Buscar música pelo codigo
 int buscarCodigo(
     FILE *fp,
     const char *codigo,
@@ -618,18 +399,14 @@ int buscarCodigo(
         if (tamanho <= 0)
             break;
 
-        /*
-            Se for espaco removido, pula.
-        */
+        //Se for espaco removido, pula.
         if (registroRemovido(fp, offset)) {
 
             offset += tamanho;
             continue;
         }
 
-        /*
-            Le a parte textual.
-        */
+        //Le a parte textual.
         buffer = (char *) malloc(tamanho - sizeof(int));
 
         if (buffer == NULL) {
@@ -637,41 +414,22 @@ int buscarCodigo(
             return 0;
         }
 
-        fseek(
-            fp,
-            offset + sizeof(int),
-            SEEK_SET
-        );
+        fseek(fp,offset + sizeof(int),SEEK_SET);
+        fread(buffer,tamanho - sizeof(int),1,fp);
 
-        fread(
-            buffer,
-            tamanho - sizeof(int),
-            1,
-            fp
-        );
-
-        /*
-            Garante terminacao.
-        */
+        //Garante terminacao.
         buffer[tamanho - sizeof(int) - 1] = '\0';
 
-        /*
-            O codigo esta antes do primeiro '|'.
-        */
+        //O codigo esta antes do primeiro '|'.
         {
             char codigoEncontrado[TAM_CODIGO + 1];
 
             int i = 0;
 
-            while (
-                buffer[i] != '|' &&
-                buffer[i] != '\0' &&
-                i < TAM_CODIGO
-            ) {
+            while (buffer[i] != '|' && buffer[i] != '\0' && i < TAM_CODIGO) {
                 codigoEncontrado[i] = buffer[i];
                 i++;
             }
-
             codigoEncontrado[i] = '\0';
 
             if (strcmp(codigoEncontrado, codigo) == 0) {
@@ -693,20 +451,7 @@ int buscarCodigo(
     return 0;
 }
 
-
-/* =========================================================
-                         REMOCAO
-   ========================================================= */
-
-/*
-    Remove uma musica pelo codigo.
-
-    O registro e substituido por:
-
-        tamanho @ offset_proximo
-
-    E o espaco entra no FINAL da lista livre.
-*/
+//Remoção
 void removerMusica(const char *codigo)
 {
     FILE *fp;
@@ -721,53 +466,22 @@ void removerMusica(const char *codigo)
         return;
     }
 
-    if (!buscarCodigo(
-            fp,
-            codigo,
-            &offset,
-            &tamanho)) {
-
-        printf(
-            "Codigo %s nao encontrado.\n",
-            codigo
-        );
-
+    if (!buscarCodigo(fp,codigo,&offset,&tamanho)) {
+        printf("Codigo %s nao encontrado.\n",codigo);
         fclose(fp);
         return;
     }
 
-    printf(
-        "Registro encontrado no offset %d.\n",
-        offset
-    );
+    printf("Registro encontrado no offset %d.\n",offset);
 
-    /*
-        Adiciona o espaco no FINAL da lista.
-    */
-    adicionarListaLivre(
-        fp,
-        offset,
-        tamanho
-    );
-
+    //Adiciona o espaco no FINAL da lista.
+    adicionarListaLivre(fp,offset,tamanho);
     fclose(fp);
-
-    printf(
-        "Registro %s removido com sucesso.\n",
-        codigo
-    );
+    printf("Registro %s removido com sucesso.\n",codigo);
 }
 
 
-/* =========================================================
-                         DUMP
-   ========================================================= */
-
-/*
-    Mostra os registros armazenados.
-*/
-void dumpArquivo()
-{
+void dumpArquivo(){
     FILE *fp;
 
     int offset;
@@ -808,102 +522,58 @@ void dumpArquivo()
         if (tamanho <= 0)
             break;
 
-        printf(
-            "Offset: %d | Tamanho: %d | ",
-            offset,
-            tamanho
-        );
+        printf("Offset: %d | Tamanho: %d | ",offset,tamanho);
 
-        /*
-            Registro removido.
-        */
+        //Registro removido.
         if (registroRemovido(fp, offset)) {
 
             int prox;
             char marcador;
 
-            fseek(
-                fp,
-                offset + sizeof(int),
-                SEEK_SET
-            );
-
-            fread(
-                &marcador,
-                sizeof(char),
-                1,
-                fp
-            );
-
-            fread(
-                &prox,
-                sizeof(int),
-                1,
-                fp
-            );
-
-            printf(
-                "LIVRE | %c | Proximo: %d\n",
-                marcador,
-                prox
-            );
+            fseek(fp,offset + sizeof(int),SEEK_SET);
+            fread(&marcador,sizeof(char),1,fp);
+            fread(&prox,sizeof(int),1,fp);
+            printf("LIVRE | %c | Proximo: %d\n",marcador,prox);
 
         } else {
 
             char *buffer;
-
-            buffer = malloc(
-                tamanho - sizeof(int)
-            );
+            buffer = malloc(tamanho - sizeof(int));
 
             if (buffer == NULL) {
                 fclose(fp);
                 return;
             }
 
-            fseek(
-                fp,
-                offset + sizeof(int),
-                SEEK_SET
-            );
+            fseek(fp,offset + sizeof(int),SEEK_SET);
 
-            fread(
-                buffer,
-                tamanho - sizeof(int),
-                1,
-                fp
-            );
-
-            buffer[
-                tamanho - sizeof(int) - 1
-            ] = '\0';
-
-            printf(
-                "OCUPADO | %s\n",
-                buffer
-            );
-
+            fread(buffer, tamanho - sizeof(int), 1, fp);
+ 
+            buffer[tamanho - sizeof(int) - 1] = '\0';
+ 
+            printf("OCUPADO | %s\n", buffer);
+ 
             free(buffer);
         }
-
+ 
         offset += tamanho;
     }
-
+ 
     printf("========================================\n");
-
+ 
     fclose(fp);
 }
-
-
+ 
+ 
 /* =========================================================
                   COMPACTACAO
    ========================================================= */
-
+ 
 /*
     Compacta o arquivo.
-
+ 
     A ideia e:
-
+ 
         arquivo antigo
               |
               v
@@ -917,248 +587,197 @@ void dumpArquivo()
               |
               v
         substitui o arquivo antigo
-
+ 
     Depois da compactacao:
-
+ 
         HEADER -> -1
-
+ 
     pois nao existem mais espacos livres.
 */
 void compactarArquivo()
 {
     FILE *origem;
     FILE *destino;
-
+ 
     int offset;
     int tamanho;
-
+ 
     origem = fopen(ARQUIVO_DADOS, "rb");
-
+ 
     if (origem == NULL) {
         printf("Arquivo inexistente.\n");
         return;
     }
-
+ 
     destino = fopen("catalogo_temp.bin", "wb");
-
+ 
     if (destino == NULL) {
         printf("Erro ao criar arquivo temporario.\n");
         fclose(origem);
         return;
     }
-
+ 
     /*
         Novo arquivo inicialmente nao possui
         espacos livres.
     */
     {
         int header = OFFSET_NULO;
-
-        fwrite(
-            &header,
-            sizeof(int),
-            1,
-            destino
-        );
+ 
+        fwrite(&header, sizeof(int), 1, destino);
     }
-
+ 
     offset = HEADER_SIZE;
-
+ 
     while (offset < tamanhoArquivo(origem)) {
-
+ 
         fseek(origem, offset, SEEK_SET);
-
-        if (fread(
-                &tamanho,
-                sizeof(int),
-                1,
-                origem
-            ) != 1)
+ 
+        if (fread(&tamanho, sizeof(int), 1, origem) != 1)
             break;
-
+ 
         if (tamanho <= 0)
             break;
-
+ 
         /*
             Se nao estiver removido, copia.
         */
         if (!registroRemovido(origem, offset)) {
-
+ 
             char *buffer;
-
+ 
             buffer = malloc(tamanho);
-
+ 
             if (buffer == NULL) {
                 fclose(origem);
                 fclose(destino);
                 return;
             }
-
-            fseek(
-                origem,
-                offset,
-                SEEK_SET
-            );
-
-            fread(
-                buffer,
-                tamanho,
-                1,
-                origem
-            );
-
-            fwrite(
-                buffer,
-                tamanho,
-                1,
-                destino
-            );
-
+ 
+            fseek(origem, offset, SEEK_SET);
+ 
+            fread(buffer, tamanho, 1, origem);
+ 
+            fwrite(buffer, tamanho, 1, destino);
+ 
             free(buffer);
         }
-
+ 
         offset += tamanho;
     }
-
+ 
     fclose(origem);
     fclose(destino);
-
+ 
     /*
         Substitui o arquivo antigo.
     */
     remove(ARQUIVO_DADOS);
-
-    if (rename(
-            "catalogo_temp.bin",
-            ARQUIVO_DADOS
-        ) != 0) {
-
-        printf(
-            "Erro ao substituir arquivo.\n"
-        );
-
+ 
+    if (rename("catalogo_temp.bin", ARQUIVO_DADOS) != 0) {
+ 
+        printf("Erro ao substituir arquivo.\n");
+ 
         return;
     }
-
-    printf(
-        "Arquivo compactado com sucesso.\n"
-    );
+ 
+    printf("Arquivo compactado com sucesso.\n");
 }
-
-
+ 
+ 
 /* =========================================================
                   LEITURA PELO TECLADO
    ========================================================= */
-
+ 
 void lerMusica(Musica *m)
 {
     printf("Codigo da faixa: ");
     scanf("%4s", m->codigo);
-
+ 
     getchar();
-
+ 
     printf("Nome da faixa: ");
     fgets(m->nome, sizeof(m->nome), stdin);
     m->nome[strcspn(m->nome, "\n")] = '\0';
-
+ 
     printf("Artista: ");
     fgets(m->artista, sizeof(m->artista), stdin);
     m->artista[strcspn(m->artista, "\n")] = '\0';
-
+ 
     printf("Genero musical: ");
     fgets(m->genero, sizeof(m->genero), stdin);
     m->genero[strcspn(m->genero, "\n")] = '\0';
 }
-
-
+ 
+ 
 /* =========================================================
                   CARREGAR INSERE.BIN
    ========================================================= */
-
+ 
 /*
     Para facilitar os testes, este programa considera
     insere.bin como um arquivo contendo registros no mesmo
     formato textual:
-
+ 
         codigo|nome|artista|genero\0
-
+ 
     um registro apos o outro.
-
+ 
     Caso o professor forneca insere.bin em outro formato,
     somente esta funcao precisa ser adaptada.
 */
 int lerRegistroInsere(FILE *fp, Musica *m)
 {
     char linha[256];
-
+ 
     if (fgets(linha, sizeof(linha), fp) == NULL)
         return 0;
-
+ 
     linha[strcspn(linha, "\r\n")] = '\0';
-
-    if (sscanf(
-            linha,
-            "%4[^|]|%60[^|]|%50[^|]|%20[^\n]",
-            m->codigo,
-            m->nome,
-            m->artista,
-            m->genero
-        ) != 4) {
-
+ 
+    if (sscanf(linha, "%4[^|]|%60[^|]|%50[^|]|%20[^\n]", m->codigo, m->nome, m->artista, m->genero) != 4) {
         return 0;
     }
-
+ 
     return 1;
 }
-
-
+ 
+ 
 /*
     Carrega todas as musicas do insere.bin e insere.
 */
 void carregarInsere()
 {
     FILE *fp;
-
+ 
     Musica m;
-
+ 
     fp = fopen(ARQUIVO_INSERE, "r");
-
+ 
     if (fp == NULL) {
-        printf(
-            "Nao foi possivel abrir %s.\n",
-            ARQUIVO_INSERE
-        );
+        printf("Nao foi possivel abrir %s.\n", ARQUIVO_INSERE);
         return;
     }
-
-    printf(
-        "\nCarregando registros de %s...\n",
-        ARQUIVO_INSERE
-    );
-
+ 
+    printf("\nCarregando registros de %s...\n", ARQUIVO_INSERE);
+ 
     while (lerRegistroInsere(fp, &m)) {
-
-        printf(
-            "Inserindo %s - %s\n",
-            m.codigo,
-            m.nome
-        );
-
+ 
+        printf("Inserindo %s - %s\n", m.codigo, m.nome);
+ 
         inserirMusica(&m);
     }
-
+ 
     fclose(fp);
-
-    printf(
-        "Carregamento finalizado.\n"
-    );
+ 
+    printf("Carregamento finalizado.\n");
 }
-
-
+ 
+ 
 /* =========================================================
                   CARREGAR REMOVE.BIN
    ========================================================= */
-
+ 
 /*
     Considera remove.bin como um arquivo texto contendo
     um codigo por linha.
@@ -1166,58 +785,40 @@ void carregarInsere()
 void carregarRemove()
 {
     FILE *fp;
-
+ 
     char codigo[TAM_CODIGO + 1];
-
+ 
     fp = fopen(ARQUIVO_REMOVE, "r");
-
+ 
     if (fp == NULL) {
-        printf(
-            "Nao foi possivel abrir %s.\n",
-            ARQUIVO_REMOVE
-        );
+        printf("Nao foi possivel abrir %s.\n", ARQUIVO_REMOVE);
         return;
     }
-
-    printf(
-        "\nExecutando remocoes de %s...\n",
-        ARQUIVO_REMOVE
-    );
-
-    while (fgets(
-        codigo,
-        sizeof(codigo),
-        fp
-    ) != NULL) {
-
-        codigo[strcspn(
-            codigo,
-            "\r\n"
-        )] = '\0';
-
+ 
+    printf("\nExecutando remocoes de %s...\n", ARQUIVO_REMOVE);
+ 
+    while (fgets(codigo, sizeof(codigo), fp) != NULL) {
+ 
+        codigo[strcspn(codigo, "\r\n")] = '\0';
+ 
         if (strlen(codigo) == 0)
             continue;
-
-        printf(
-            "\nRemovendo codigo: %s\n",
-            codigo
-        );
-
+ 
+        printf("\nRemovendo codigo: %s\n", codigo);
+ 
         removerMusica(codigo);
     }
-
+ 
     fclose(fp);
-
-    printf(
-        "\nRemocoes finalizadas.\n"
-    );
+ 
+    printf("\nRemocoes finalizadas.\n");
 }
-
-
+ 
+ 
 /* =========================================================
                          MENU
    ========================================================= */
-
+ 
 void menu()
 {
     printf("\n");
@@ -1234,113 +835,99 @@ void menu()
     printf("========================================\n");
     printf("Opcao: ");
 }
-
-
+ 
+ 
 /* =========================================================
                          MAIN
    ========================================================= */
-
+ 
 int main()
 {
     int opcao;
-
+ 
     /*
         IMPORTANTE:
-
+ 
         O arquivo somente e criado caso ainda nao exista.
         Isso atende a observacao do exercicio.
     */
     inicializarArquivo();
-
+ 
     do {
-
+ 
         menu();
-
+ 
         scanf("%d", &opcao);
-
+ 
         switch (opcao) {
-
+ 
             case 1:
             {
                 Musica m;
-
-                printf(
-                    "\n--- INSERCAO ---\n"
-                );
-
+ 
+                printf("\n--- INSERCAO ---\n");
+ 
                 lerMusica(&m);
-
+ 
                 inserirMusica(&m);
-
+ 
                 break;
             }
-
+ 
             case 2:
             {
                 char codigo[TAM_CODIGO + 1];
-
-                printf(
-                    "\n--- REMOCAO ---\n"
-                );
-
-                printf(
-                    "Codigo da faixa: "
-                );
-
-                scanf(
-                    "%4s",
-                    codigo
-                );
-
+ 
+                printf("\n--- REMOCAO ---\n");
+ 
+                printf("Codigo da faixa: ");
+ 
+                scanf("%4s", codigo);
+ 
                 removerMusica(codigo);
-
+ 
                 break;
             }
-
+ 
             case 3:
-
-                printf(
-                    "\n--- COMPACTACAO ---\n"
-                );
-
+ 
+                printf("\n--- COMPACTACAO ---\n");
+ 
                 compactarArquivo();
-
+ 
                 break;
-
+ 
             case 4:
-
+ 
                 dumpArquivo();
-
+ 
                 break;
-
+ 
             case 5:
-
+ 
                 carregarInsere();
-
+ 
                 break;
-
+ 
             case 6:
-
+ 
                 carregarRemove();
-
+ 
                 break;
-
+ 
             case 0:
-
-                printf(
-                    "\nPrograma encerrado.\n"
-                );
-
+ 
+                printf("\nPrograma encerrado.\n");
+ 
                 break;
-
+ 
             default:
-
-                printf(
-                    "\nOpcao invalida.\n"
-                );
+ 
+                printf("\nOpcao invalida.\n");
         }
-
+ 
     } while (opcao != 0);
-
+ 
     return 0;
 }
+ 
